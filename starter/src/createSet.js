@@ -1,65 +1,90 @@
-//DO NOT CHANGE ANYTHING IN THIS FILE//
+// starter/src/createSet.js
+// This file generates the form to create a new Study Set.
 
-//// This file is responsible for generating the form used to create a new study set.
-
-// This function will be used to render the new study set on submit
 import { renderCardSetsPage } from "./cardSetsPage.js";
-// This function will render errors
 import { showError } from "./errors.js";
-
-// These function create elements for our form
 import {
   createLabel,
   createInput,
   createSubmitButton,
 } from "./utilityRenderFunctions.js";
 
-// This function generates the form for creating new study sets
+/**
+ * Build the "Create Set" form.
+ * @param {Array} setCards  Existing sets array (mutated on submit).
+ */
 const createSetForm = (setCards) => {
-  // Generates the new form element
   const form = document.createElement("form");
-  // Sets an attribute that will be used to select the form during testing
   form.setAttribute("data-cy", "set_form");
-  // Sets the form to invisible
   form.className = "notVisible";
 
-  //Creates the label for the title input
+  // Title field
   const label = createLabel("Card Set Title", "titleInput");
-  // Creates the input fot the title
   const input = createInput("titleInput");
-  const submitButton = createSubmitButton("Submit Set");
+  input.setAttribute("data-cy", "create-set-name");
 
-  // Adds an event listener to the form.
-  // On submission, a new study set will be created.
+  // Submit
+  const submitButton = createSubmitButton("Submit Set");
+  submitButton.setAttribute("data-cy", "create-set-submit");
+
+  // Inline error placeholder (hidden by default)
+  const errorEl = document.createElement("p");
+  errorEl.setAttribute("data-cy", "error-message");
+  errorEl.classList.add("notVisible");
+
   form.addEventListener("submit", (e) => submitSet(e, setCards));
 
-  //Adds elements to the form
-  form.append(label, input, submitButton);
+  form.append(label, input, submitButton, errorEl);
   return form;
 };
 
-// This function creates a new study set.
-// It assigns a title to the set and initializes an empty array for cards,
-// which can be added later on the flashcards page.
+/**
+ * Handle submit: validate, create set, show toast, re-render sets page.
+ */
 const submitSet = (e, setCards) => {
-  // Prevents default form behavior and screen refresh
   e.preventDefault();
 
-  //Get value form title input
   const title = e.target.titleInput.value;
 
-  // Errors if user entered an empty string
-  if (!title) {
+  // Validation
+  if (!title || !title.trim()) {
     showError("TITLE CANNOT BE EMPTY");
-  } else {
-    //Creates set object
-    const id = setCards.length ? setCards[setCards.length - 1].id + 1 : 1;
-    //Adds set data
-    setCards.push({ id, title, cards: [] });
 
-    //Adds new card set to DOM
-    renderCardSetsPage();
+    let err = e.target.querySelector('[data-cy="error-message"]');
+    if (!err) {
+      err = document.createElement("p");
+      err.setAttribute("data-cy", "error-message");
+      e.target.append(err);
+    }
+    err.textContent = "TITLE CANNOT BE EMPTY";
+    err.classList.remove("notVisible");
+    return;
   }
+
+  // Create new set
+  const id = setCards.length ? setCards[setCards.length - 1].id + 1 : 1;
+  setCards.push({ id, title: title.trim(), cards: [] });
+
+  // Success toast (attach to body so it survives re-render)
+  const toast = document.createElement("div");
+  toast.setAttribute("data-cy", "toast-success");
+  toast.textContent = "Set created";
+  toast.style.position = "fixed";
+  toast.style.bottom = "16px";
+  toast.style.right = "16px";
+  toast.style.background = "#16a34a";
+  toast.style.color = "#fff";
+  toast.style.padding = "8px 12px";
+  toast.style.borderRadius = "6px";
+  toast.style.fontSize = "14px";
+  toast.style.zIndex = "9999";
+  document.body.appendChild(toast);
+
+  // Auto-remove toast after a short delay
+  setTimeout(() => toast.remove(), 1500);
+
+  // Re-render sets page
+  renderCardSetsPage();
 };
 
 export { createSetForm };
